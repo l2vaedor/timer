@@ -138,11 +138,9 @@
       return end.getTime();
     }
 
-    function recentRecords() {
+    function recordsFromLastHour() {
       const now = Date.now();
-      records = records.filter(record => now - record.finishedAt <= ONE_HOUR);
-      saveRecords();
-      return records;
+      return records.filter(record => now - record.finishedAt <= ONE_HOUR);
     }
 
     function updateTimer() {
@@ -150,13 +148,13 @@
     }
 
     function render() {
-      const recent = recentRecords();
+      const recent = recordsFromLastHour();
       document.querySelector('#count').textContent = recent.length;
       const average = recent.length ? recent.reduce((sum, record) => sum + record.duration, 0) / recent.length : 0;
       document.querySelector('#average').textContent = formatDuration(average);
 
-      recordsList.innerHTML = recent.length
-        ? recent.slice().reverse().map(record =>
+      recordsList.innerHTML = records.length
+        ? records.slice().reverse().map(record =>
           `<li data-id="${record.finishedAt}">
             <div class="record"><span class="duration">${formatDuration(record.duration)}</span><span class="time">${formatClock(new Date(record.startedAt))} – ${formatClock(new Date(record.finishedAt))}</span></div>
             <div class="record-actions"><button type="button" data-action="edit">Краен час</button><button type="button" class="delete" data-action="delete">Изтрий</button></div>
