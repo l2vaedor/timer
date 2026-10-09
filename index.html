@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Таймер</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #090909;
+      color: #f8f6f6;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+    }
+
+    main { width: min(100%, 480px); padding-bottom: 42px; }
+
+    header {
+      padding: 28px 22px 36px;
+      text-align: center;
+      background: #282324;
+      border-radius: 0 0 50% 50% / 0 0 8% 8%;
+    }
+
+    h1 { margin: 0 0 28px; font-size: 20px; letter-spacing: .04em; }
+
+    .stats { display: flex; justify-content: center; gap: 38px; }
+    .stat { min-width: 120px; }
+    .stat strong { display: block; font-size: 37px; font-weight: 500; }
+    .stat span { color: #aaa4a5; font-size: 14px; }
+
+    section { padding: 32px 28px 0; }
+    .timer-label { text-align: center; color: #aaa4a5; font-size: 15px; }
+    #timer { text-align: center; margin: 8px 0 6px; font-size: 58px; font-variant-numeric: tabular-nums; }
+    #start-time { text-align: center; min-height: 20px; color: #aaa4a5; font-size: 15px; }
+
+    #toggle {
+      display: block;
+      width: 196px;
+      height: 196px;
+      margin: 36px auto 34px;
+      border: 18px solid #3d393a;
+      border-radius: 50%;
+      background: #59d7bf;
+      box-shadow: 0 0 28px #59d7bf66;
+      color: white;
+      cursor: pointer;
+    }
+
+    #toggle small { display: block; font-size: 14px; letter-spacing: .06em; }
+    #toggle strong { display: block; margin-top: 5px; font-size: 28px; }
+    #toggle.running { background: #ef7770; box-shadow: 0 0 28px #ef777066; }
+
+    h2 { margin: 0 0 14px; font-size: 17px; font-weight: normal; color: #aaa4a5; }
+    #records { list-style: none; padding: 0; margin: 0; }
+    #records li { display: flex; justify-content: space-between; padding: 13px 4px; border-bottom: 1px solid #252323; }
+    .duration { font-size: 22px; }
+    .time { color: #aaa4a5; font-size: 14px; align-self: center; }
+    .empty { color: #777; text-align: center; padding: 18px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>ТАЙМЕР</h1>
+      <div class="stats">
+        <div class="stat"><strong id="count">0</strong><span>засичания за 1 час</span></div>
+        <div class="stat"><strong id="average">0:00</strong><span>средна продължителност</span></div>
+      </div>
+    </header>
+
+    <section>
+      <div class="timer-label">Текущо засичане</div>
+      <div id="timer">0:00</div>
+      <div id="start-time">Няма активно засичане</div>
+      <button id="toggle" type="button"><small>НАТИСНИ ЗА</small><strong>СТАРТ</strong></button>
+
+      <h2>Последни засичания</h2>
+      <ul id="records"></ul>
+    </section>
+  </main>
+
+  <script>
+    const ONE_HOUR = 60 * 60 * 1000;
+    const toggle = document.querySelector('#toggle');
+    const timer = document.querySelector('#timer');
+    const startTime = document.querySelector('#start-time');
+    const recordsList = document.querySelector('#records');
+    let startedAt = null;
+    let interval = null;
+    let records = loadRecords();
+
+    function loadRecords() {
+      try {
+        return JSON.parse(localStorage.getItem('timerRecords') || '[]');
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveRecords() {
+      try {
+        localStorage.setItem('timerRecords', JSON.stringify(records));
+      } catch (error) {
+        // В изолиран preview режим таймерът работи без запазване след презареждане.
+      }
+    }
+
+    function formatDuration(milliseconds) {
+      const seconds = Math.floor(milliseconds / 1000);
+      return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+    }
+
+    function formatClock(date) {
+      return date.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function recentRecords() {
+      const now = Date.now();
+      records = records.filter(record => now - record.finishedAt <= ONE_HOUR);
+      saveRecords();
+      return records;
+    }
+
+    function updateTimer() {
+      timer.textContent = formatDuration(Date.now() - startedAt);
+    }
+
+    function render() {
+      const recent = recentRecords();
+      document.querySelector('#count').textContent = recent.length;
+      const average = recent.length ? recent.reduce((sum, record) => sum + record.duration, 0) / recent.length : 0;
+      document.querySelector('#average').textContent = formatDuration(average);
+
+      recordsList.innerHTML = recent.length
+        ? recent.slice().reverse().map(record =>
+          `<li><span class="duration">${formatDuration(record.duration)}</span><span class="time">${formatClock(new Date(record.startedAt))}</span></li>`
+        ).join('')
+        : '<li class="empty">Все още няма засичания</li>';
+    }
+
+    toggle.addEventListener('click', () => {
+      if (!startedAt) {
+        startedAt = Date.now();
+        startTime.textContent = 'Старт: ' + formatClock(new Date(startedAt));
+        toggle.classList.add('running');
+        toggle.innerHTML = '<small>НАТИСНИ ЗА</small><strong>СТОП</strong>';
+        updateTimer();
+        interval = setInterval(updateTimer, 250);
+        return;
+      }
+
+      records.push({ startedAt, finishedAt: Date.now(), duration: Date.now() - startedAt });
+      startedAt = null;
+      clearInterval(interval);
+      interval = null;
+      timer.textContent = '0:00';
+      startTime.textContent = 'Няма активно засичане';
+      toggle.classList.remove('running');
+      toggle.innerHTML = '<small>НАТИСНИ ЗА</small><strong>СТАРТ</strong>';
+      render();
+    });
+
+    render();
+    setInterval(render, 30000);
+  </script>
+</body>
+</html>
