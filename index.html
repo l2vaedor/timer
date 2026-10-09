@@ -57,9 +57,13 @@
 
     h2 { margin: 0 0 14px; font-size: 17px; font-weight: normal; color: #aaa4a5; }
     #records { list-style: none; padding: 0; margin: 0; }
-    #records li { display: flex; justify-content: space-between; padding: 13px 4px; border-bottom: 1px solid #252323; }
+    #records li { padding: 13px 4px; border-bottom: 1px solid #252323; }
+    .record { display: flex; justify-content: space-between; align-items: center; }
     .duration { font-size: 22px; }
     .time { color: #aaa4a5; font-size: 14px; align-self: center; }
+    .record-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .record-actions button { border: 1px solid #494344; border-radius: 6px; background: #1c1919; color: #ddd; padding: 7px 9px; font-size: 13px; }
+    .record-actions .delete { color: #ff9b95; }
     .empty { color: #777; text-align: center; padding: 18px 0; }
   </style>
 </head>
@@ -119,6 +123,21 @@
       return date.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
+    function parseEndTime(value, record) {
+      const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!match) return null;
+
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      const seconds = Number(match[3] || 0);
+      if (hours > 23 || minutes > 59 || seconds > 59) return null;
+
+      const end = new Date(record.finishedAt);
+      end.setHours(hours, minutes, seconds, 0);
+      if (end.getTime() < record.startedAt) end.setDate(end.getDate() + 1);
+      return end.getTime();
+    }
+
     function recentRecords() {
       const now = Date.now();
       records = records.filter(record => now - record.finishedAt <= ONE_HOUR);
@@ -138,10 +157,42 @@
 
       recordsList.innerHTML = recent.length
         ? recent.slice().reverse().map(record =>
-          `<li><span class="duration">${formatDuration(record.duration)}</span><span class="time">${formatClock(new Date(record.startedAt))}</span></li>`
+          `<li data-id="${record.finishedAt}">
+            <div class="record"><span class="duration">${formatDuration(record.duration)}</span><span class="time">${formatClock(new Date(record.startedAt))} – ${formatClock(new Date(record.finishedAt))}</span></div>
+            <div class="record-actions"><button type="button" data-action="edit">Краен час</button><button type="button" class="delete" data-action="delete">Изтрий</button></div>
+          </li>`
         ).join('')
         : '<li class="empty">Все още няма засичания</li>';
     }
+
+    recordsList.addEventListener('click', event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      const item = button.closest('li[data-id]');
+      const record = records.find(entry => entry.finishedAt === Number(item.dataset.id));
+      if (!record) return;
+
+      if (button.dataset.action === 'delete') {
+        records = records.filter(entry => entry !== record);
+        saveRecords();
+        render();
+        return;
+      }
+
+      const value = prompt('Въведи краен час (например 14:30:00):', formatClock(new Date(record.finishedAt)));
+      if (value === null) return;
+      const endTime = parseEndTime(value, record);
+      if (!endTime) {
+        alert('Въведи валиден час във формат ЧЧ:ММ или ЧЧ:ММ:СС.');
+        return;
+      }
+
+      record.finishedAt = endTime;
+      record.duration = endTime - record.startedAt;
+      saveRecords();
+      render();
+    });
 
     toggle.addEventListener('click', () => {
       if (!startedAt) {
