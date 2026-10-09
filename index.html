@@ -70,11 +70,11 @@
 <body>
   <main>
     <header>
-      <h1>Брояч на контракции</h1>
+      <h1>ТАЙМЕР</h1>
       <div class="stats">
-        <div class="stat"><strong id="count">0</strong><span>контракции за последния 1 час</span></div>
-        <div class="stat"><strong id="average">0:00</strong><span>средна продължителност на контракциите</span></div>
-        <div class="stat"><strong id="average-gap">0:00</strong><span>средно време между контракциите</span></div>
+        <div class="stat"><strong id="count">0</strong><span>засичания за 1 час</span></div>
+        <div class="stat"><strong id="average">0:00</strong><span>средна продължителност</span></div>
+        <div class="stat"><strong id="average-gap">0:00</strong><span>средно време между</span></div>
       </div>
     </header>
 
@@ -121,7 +121,7 @@
     }
 
     function formatClock(date) {
-      return date.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return date.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
     }
 
     function parseEndTime(value, record) {
