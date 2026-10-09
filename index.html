@@ -28,9 +28,9 @@
 
     h1 { margin: 0 0 28px; font-size: 20px; letter-spacing: .04em; }
 
-    .stats { display: flex; justify-content: center; gap: 38px; }
-    .stat { min-width: 120px; }
-    .stat strong { display: block; font-size: 37px; font-weight: 500; }
+    .stats { display: flex; justify-content: center; gap: 18px; }
+    .stat { min-width: 0; flex: 1; }
+    .stat strong { display: block; font-size: 30px; font-weight: 500; }
     .stat span { color: #aaa4a5; font-size: 14px; }
 
     section { padding: 32px 28px 0; }
@@ -74,6 +74,7 @@
       <div class="stats">
         <div class="stat"><strong id="count">0</strong><span>засичания за 1 час</span></div>
         <div class="stat"><strong id="average">0:00</strong><span>средна продължителност</span></div>
+        <div class="stat"><strong id="average-gap">0:00</strong><span>средно време между</span></div>
       </div>
     </header>
 
@@ -152,6 +153,11 @@
       document.querySelector('#count').textContent = recent.length;
       const average = recent.length ? recent.reduce((sum, record) => sum + record.duration, 0) / recent.length : 0;
       document.querySelector('#average').textContent = formatDuration(average);
+
+      const chronological = recent.slice().sort((first, second) => first.startedAt - second.startedAt);
+      const intervals = chronological.slice(1).map((record, index) => record.finishedAt - chronological[index].startedAt);
+      const averageGap = intervals.length ? intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length : 0;
+      document.querySelector('#average-gap').textContent = formatDuration(averageGap);
 
       recordsList.innerHTML = records.length
         ? records.slice().reverse().map(record =>
