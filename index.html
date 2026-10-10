@@ -72,7 +72,7 @@
     <header>
       <h1>Брояч на контракции</h1>
       <div class="stats">
-        <div class="stat"><strong id="count">0</strong><span>контракции за последния 1 час</span></div>
+        <div class="stat"><strong id="count">0</strong><span>общо контракции</span></div>
         <div class="stat"><strong id="average">0:00</strong><span>средна продължителност на контракциите</span></div>
         <div class="stat"><strong id="average-gap">0:00</strong><span>средно време между контракциите</span></div>
       </div>
@@ -150,7 +150,7 @@
 
     function render() {
       const recent = recordsFromLastHour();
-      document.querySelector('#count').textContent = recent.length;
+      document.querySelector('#count').textContent = records.length;
       const average = recent.length ? recent.reduce((sum, record) => sum + record.duration, 0) / recent.length : 0;
       document.querySelector('#average').textContent = formatDuration(average);
 
